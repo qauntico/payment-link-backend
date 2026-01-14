@@ -1,0 +1,9 @@
+-- AlterTable
+ALTER TABLE "payments" ADD COLUMN     "token" TEXT,
+ALTER COLUMN "productId" DROP NOT NULL,
+ALTER COLUMN "customerName" DROP NOT NULL,
+ALTER COLUMN "customerEmail" DROP NOT NULL,
+ALTER COLUMN "customerPhoneNumber" DROP NOT NULL,
+ALTER COLUMN "amount" DROP NOT NULL,
+ALTER COLUMN "currencyCode" DROP NOT NULL,
+ALTER COLUMN "countryCode" DROP NOT NULL;

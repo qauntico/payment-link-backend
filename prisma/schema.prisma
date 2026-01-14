@@ -1,0 +1,120 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+enum Role {
+  ADMIN
+  MERCHANT
+}
+
+// enum PaymentStatus {
+//   not_initialized
+//   initialized
+//   pending
+//   success
+//   failed
+// }
+
+enum Currency {
+  XAF
+  USD
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+  moduleFormat    = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Merchant/User Model
+model User {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  firstName    String
+  lastName     String
+  password     String
+  phoneNumber  String
+  businessName String
+  supportEmail String?
+  role         Role      @default(MERCHANT)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  products     Product[]// Merchant can have multiple products
+
+  @@map("users")
+}
+
+// Product Model
+model Product {
+  id          Int      @id @default(autoincrement())
+  merchantId  Int
+  image       String   // URL or file path to product image
+  title       String
+  description String?  // Optional description
+  price       Decimal  @db.Decimal(10, 2) // Price with 2 decimal places
+  currency    Currency  @default(XAF) // Currency for the product (XAF or USD)
+  quantity    Int?     // null = unlimited quantity, otherwise fixed quantity
+  email       String?  // Optional email for product-specific contact
+  paymentLink String?  // Full payment link URL (e.g., "https://yourapp.com/pay?productId=1")
+  isActive    Boolean  @default(true) // Becomes false when quantity reaches 0
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  merchant    User      @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  payments    Payment[]
+
+  @@index([merchantId])
+  @@index([isActive])
+  @@index([createdAt])
+  @@map("products")
+}
+
+// Payment/Transaction Model
+model Payment {
+  id                Int           @id @default(autoincrement())
+  token             String?       // JWT token from payment API authentication
+  productId         Int?          // Optional initially, required when payment is initialized
+  customerName      String?       // Optional initially, required when payment is initialized
+  customerEmail     String?       // Optional initially, required when payment is initialized
+  customerPhoneNumber String?     // Optional initially, required when payment is initialized
+  amount            Decimal?      @db.Decimal(10, 2) // Optional initially, required when payment is initialized
+  status            String?
+  externalReference String?       // Internal payment ID/reference
+  momoReference     String?       // Transaction reference from MoMo API
+  currencyCode      String?       @default("XAF") // Default currency code
+  countryCode       String?       @default("CM") // Default country code
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  // Relations
+  product           Product?      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  receipt           Receipt?
+
+  @@index([productId])
+  @@index([status])
+  @@index([momoReference])
+  @@index([externalReference])
+  @@index([createdAt])
+  @@map("payments")
+}
+
+// Receipt Model
+model Receipt {
+  id         Int      @id @default(autoincrement())
+  paymentId  Int      @unique
+  receiptUrl String?  // URL to the receipt PDF stored in Cloudinary
+  createdAt  DateTime @default(now())
+
+  // Relations
+  payment    Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@map("receipts")
+}

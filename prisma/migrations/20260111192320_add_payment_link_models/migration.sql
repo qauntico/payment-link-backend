@@ -1,0 +1,2 @@
+-- This migration was empty/broken - constraint rename happens in next migration
+-- No changes needed here
