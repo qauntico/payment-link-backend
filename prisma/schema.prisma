@@ -42,6 +42,7 @@ model User {
   businessName String
   supportEmail String?
   role         Role     @default(MERCHANT)
+  restricted   Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
