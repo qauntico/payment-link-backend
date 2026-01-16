@@ -13,13 +13,9 @@ export enum PaymentMode {
 }
 
 export class InitiatePaymentDto {
-  @IsNumber()
+  @IsString()
   @IsNotEmpty()
-  paymentId: number;
-
-  @IsNumber()
-  @IsNotEmpty()
-  productId: number;
+  paymentId: string;
 
   @IsEnum(PaymentMode)
   @IsNotEmpty()
@@ -29,14 +25,9 @@ export class InitiatePaymentDto {
   @IsNotEmpty()
   phoneNumber: string;
 
-  @IsString()
-  @IsNotEmpty()
-  transactionType: string; // "payin"
-
   @IsNumber()
   @IsNotEmpty()
-  @Min(0.01)
-  amount: number;
+  quantity: number;
 
   @IsString()
   @IsNotEmpty()

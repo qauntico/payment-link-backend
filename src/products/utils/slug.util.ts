@@ -11,11 +11,11 @@ export function generateSlug(): string {
 
 /**
  * Generates a payment link URL with product ID
- * @param productId - The ID of the product
+ * @param productId - The ID of the product (UUID)
  * @param baseUrl - The base URL of the application (default: from env or localhost)
  * @returns The full payment link URL
  */
-export function generatePaymentLink(productId: number, baseUrl?: string): string {
+export function generatePaymentLink(productId: string, baseUrl?: string): string {
   const appBaseUrl = baseUrl || process.env.APP_BASE_URL || 'http://localhost:3000';
   return `${appBaseUrl}/pay?productId=${productId}`;
 }

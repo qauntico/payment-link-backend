@@ -1,8 +1,8 @@
 import { IsString, IsNumber, IsOptional } from 'class-validator';
 
 export class CheckPaymentStatusResponseDto {
-  @IsNumber()
-  paymentId: number;
+  @IsString()
+  paymentId: string;
 
   @IsString()
   status: string;
@@ -16,7 +16,7 @@ export class CheckPaymentStatusResponseDto {
   receiptUrl?: string;
 
   constructor(
-    paymentId: number,
+    paymentId: string,
     status: string,
     externalReference?: string,
     receiptUrl?: string,

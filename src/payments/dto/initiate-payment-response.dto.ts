@@ -1,8 +1,8 @@
-import { IsString, IsNumber } from 'class-validator';
+import { IsString } from 'class-validator';
 
 export class InitiatePaymentResponseDto {
-  @IsNumber()
-  id: number;
+  @IsString()
+  id: string;
 
   @IsString()
   message: string;
@@ -14,7 +14,7 @@ export class InitiatePaymentResponseDto {
   internalPaymentId?: string;
 
   constructor(
-    id: number,
+    id: string,
     message: string = 'Payment initialized successfully',
     providerStatus?: string,
     internalPaymentId?: string,

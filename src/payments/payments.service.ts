@@ -10,14 +10,13 @@ import { AuthenticatePaymentResponseDto } from './dto/authenticate-payment-respo
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
 import { InitiatePaymentResponseDto } from './dto/initiate-payment-response.dto';
 import { CheckPaymentStatusResponseDto } from './dto/check-payment-status-response.dto';
+import { ProductWithMerchantDto } from './dto/product-with-merchant.dto';
 import { prisma } from 'src/prisma.service';
 import { randomUUID } from 'crypto';
 import { CloudinaryService } from '../products/cloudinary/cloudinary.service';
 import { generateReceiptPdf } from './utils/receipt.util';
-import {
-  paymentApiPost,
-  paymentApiGet,
-} from './utils/payment-api.util';
+import { paymentApiPost, paymentApiGet } from './utils/payment-api.util';
+import { sendReceiptEmail } from './utils/send-receipt-email.util';
 
 interface PaymentAuthResponse {
   message: string;
@@ -66,9 +65,9 @@ export class PaymentsService {
     private configService: ConfigService,
     private cloudinaryService: CloudinaryService,
   ) {}
-   // Authenticate payment for a product
+  // Authenticate payment for a product
   async authenticatePayment(
-    productId: number,
+    productId: string,
   ): Promise<AuthenticatePaymentResponseDto> {
     const baseUrl = this.configService.get<string>('PAYMENTBASE_URL');
     const clientKey = this.configService.get<string>('PAYMENT_CLIENT_KEY');
@@ -163,13 +162,11 @@ export class PaymentsService {
       paymentId,
       paymentMode,
       phoneNumber,
-      transactionType,
-      amount,
+      quantity,
       fullName,
       emailAddress,
       currencyCode,
       countryCode,
-      productId,
     } = initiatePaymentDto;
 
     const baseUrl = this.configService.get<string>('PAYMENTBASE_URL');
@@ -199,12 +196,20 @@ export class PaymentsService {
       }
 
       const product = await prisma.product.findUnique({
-        where: { id: productId },
+        where: { id: payment.productId || undefined },
       });
 
-      if (!product || (product.quantity !== null && product.quantity === 0)) {
-        throw new NotFoundException('Product not found or quantity is 0');
+      if (!product) {
+        throw new NotFoundException('Product not found');
       }
+
+      if (
+        (product.quantity !== null && product.quantity === 0) ||
+        product.isActive === false
+      ) {
+        throw new NotFoundException('Product quantity is 0 or product is not active');
+      }
+
 
       if (!payment.token) {
         throw new UnauthorizedException(
@@ -212,6 +217,12 @@ export class PaymentsService {
         );
       }
 
+      let amount = 0;
+      if (quantity > (product.quantity || 0)) {
+        throw new BadGatewayException('Quantity is greater than product quantity');
+      }
+      amount = Number(product.price) * Number(quantity);
+      console.log('amount', amount);
       // Generate unique UUID for externalReference
       const externalReference = randomUUID();
 
@@ -219,13 +230,13 @@ export class PaymentsService {
       const updatedPayment = await prisma.payment.update({
         where: { id: paymentId },
         data: {
-          productId: productId,
           customerName: fullName,
           customerEmail: emailAddress,
           customerPhoneNumber: phoneNumber,
           amount: amount.toString(), // Convert to string for Decimal type
           currencyCode: currencyCode,
           countryCode: countryCode,
+          quantity: quantity,
           externalReference: externalReference,
         },
       });
@@ -248,7 +259,7 @@ export class PaymentsService {
         {
           paymentMode: paymentMode,
           phoneNumber: phoneNumber,
-          transactionType: transactionType,
+          transactionType: "payin",
           amount: amount,
           fullName: fullName,
           emailAddress: emailAddress,
@@ -306,7 +317,7 @@ export class PaymentsService {
   }
 
   async checkPaymentStatus(
-    paymentId: number,
+    paymentId: string,
   ): Promise<CheckPaymentStatusResponseDto> {
     const baseUrl = this.configService.get<string>('PAYMENTBASE_URL');
     const clientKey = this.configService.get<string>('PAYMENT_CLIENT_KEY');
@@ -374,15 +385,12 @@ export class PaymentsService {
         operatorReference: string;
         providerReference: string;
         externalTransactionReference: string;
-      }>(
-        `/api/v1/xyz/check-status?reference=${payment.externalReference}`,
-        {
-          baseUrl,
-          clientKey,
-          clientSecret,
-          token: payment.token,
-        },
-      ).catch((error) => {
+      }>(`/api/v1/xyz/check-status?reference=${payment.externalReference}`, {
+        baseUrl,
+        clientKey,
+        clientSecret,
+        token: payment.token,
+      }).catch((error) => {
         // Check if token has expired (401 Unauthorized)
         if (error.status === 401) {
           throw new UnauthorizedException(
@@ -393,6 +401,8 @@ export class PaymentsService {
           `Payment status check failed: ${error.message || error.statusText}`,
         );
       });
+
+      //console.log("data", data)
 
       if (!data.data?.status) {
         throw new BadGatewayException(
@@ -425,7 +435,7 @@ export class PaymentsService {
 
             // Only update if quantity is not null (some products have unlimited quantity)
             if (product.quantity !== null && product.quantity > 0) {
-              const newQuantity = product.quantity - 1;
+              const newQuantity = product.quantity - (updatedPayment.quantity || 0);
 
               await prisma.product.update({
                 where: { id: updatedPayment.productId },
@@ -460,6 +470,26 @@ export class PaymentsService {
               receiptUrl: receiptUrl,
             },
           });
+
+          // Send receipt email to customer if email is available
+          if (updatedPayment.customerEmail && updatedPayment.customerName) {
+            try {
+              await sendReceiptEmail({
+                customerEmail: updatedPayment.customerEmail,
+                customerName: updatedPayment.customerName,
+                productTitle: updatedPayment.product?.title || 'Product',
+                amount: updatedPayment.amount
+                  ? Number(updatedPayment.amount).toFixed(2)
+                  : '0.00',
+                currency: updatedPayment.currencyCode || updatedPayment.product?.currency || 'XAF',
+                receiptUrl: receiptUrl,
+                merchantName: updatedPayment.product?.merchant?.businessName || 'Merchant',
+              });
+            } catch (emailError) {
+              // Log error but don't fail the payment process
+              console.error('Failed to send receipt email:', emailError);
+            }
+          }
 
           return new CheckPaymentStatusResponseDto(
             paymentId,
@@ -497,6 +527,68 @@ export class PaymentsService {
       }
       throw new InternalServerErrorException(
         `Failed to check payment status: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
+  }
+
+  async getProductWithMerchant(
+    productId: string,
+  ): Promise<ProductWithMerchantDto> {
+    try {
+      // Find product with merchant information
+      const product = await prisma.product.findUnique({
+        where: { id: productId },
+        include: {
+          merchant: true,
+        },
+      });
+
+      if (!product) {
+        throw new NotFoundException(`Product with ID ${productId} not found`);
+      }
+
+      // Transform product data
+      const productData = {
+        id: product.id,
+        merchantId: product.merchantId,
+        image: product.image,
+        title: product.title,
+        description: product.description,
+        price: Number(product.price),
+        currency: product.currency,
+        quantity: product.quantity,
+        email: product.email,
+        paymentLink: product.paymentLink,
+        isActive: product.isActive,
+        createdAt: product.createdAt,
+        updatedAt: product.updatedAt,
+      };
+
+      // Transform merchant data
+      const merchantData = {
+        id: product.merchant.id,
+        email: product.merchant.email,
+        firstName: product.merchant.firstName,
+        lastName: product.merchant.lastName,
+        phoneNumber: product.merchant.phoneNumber,
+        businessName: product.merchant.businessName,
+        supportEmail: product.merchant.supportEmail,
+        role: product.merchant.role,
+        createdAt: product.merchant.createdAt,
+        updatedAt: product.merchant.updatedAt,
+      };
+
+      return {
+        product: productData,
+        merchant: merchantData,
+      };
+    } catch (error) {
+      console.error('Error fetching product with merchant:', error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        `Failed to fetch product: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
   }

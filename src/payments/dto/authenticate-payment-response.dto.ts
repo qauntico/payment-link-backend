@@ -1,13 +1,13 @@
-import { IsNumber, IsString } from 'class-validator';
+import { IsString } from 'class-validator';
 
 export class AuthenticatePaymentResponseDto {
-  @IsNumber()
-  id: number;
+  @IsString()
+  id: string;
 
   @IsString()
   message: string;
 
-  constructor(id: number, message: string = 'Payment authentication successful') {
+  constructor(id: string, message: string = 'Payment authentication successful') {
     this.id = id;
     this.message = message;
   }

@@ -2,10 +2,10 @@ import { Expose } from 'class-transformer';
 
 export class ProductResponseDto {
   @Expose()
-  id: number;
+  id: string;
 
   @Expose()
-  merchantId: number;
+  merchantId: string;
 
   @Expose()
   image: string;

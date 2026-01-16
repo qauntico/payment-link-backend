@@ -5,7 +5,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseIntPipe,
   Body,
   UsePipes,
   ValidationPipe,
@@ -15,6 +14,7 @@ import { AuthenticatePaymentResponseDto } from './dto/authenticate-payment-respo
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
 import { InitiatePaymentResponseDto } from './dto/initiate-payment-response.dto';
 import { CheckPaymentStatusResponseDto } from './dto/check-payment-status-response.dto';
+import { ProductWithMerchantDto } from './dto/product-with-merchant.dto';
 
 @Controller('payments')
 export class PaymentsController {
@@ -23,7 +23,7 @@ export class PaymentsController {
   @Post('authenticate/:productId')
   @HttpCode(HttpStatus.OK)
   async authenticatePayment(
-    @Param('productId', ParseIntPipe) productId: number,
+    @Param('productId') productId: string,
   ): Promise<AuthenticatePaymentResponseDto> {
     return this.paymentsService.authenticatePayment(productId);
   }
@@ -40,8 +40,20 @@ export class PaymentsController {
   @Get('status/:paymentId')
   @HttpCode(HttpStatus.OK)
   async checkPaymentStatus(
-    @Param('paymentId', ParseIntPipe) paymentId: number,
+    @Param('paymentId') paymentId: string,
   ): Promise<CheckPaymentStatusResponseDto> {
     return this.paymentsService.checkPaymentStatus(paymentId);
   }
+
+  @Get('product/:productId')
+  @HttpCode(HttpStatus.OK)
+  async getProductWithMerchant(
+    @Param('productId') productId: string,
+  ): Promise<ProductWithMerchantDto> {
+    return this.paymentsService.getProductWithMerchant(productId);
+  }
+  
+
+  
+
 }

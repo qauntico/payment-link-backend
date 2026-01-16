@@ -10,6 +10,7 @@ import { SignupResponseDto } from './dto/signup-response.dto';
 import { LoginDto } from './dto/login.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { ProfileResponseDto } from './dto/profile-response.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { hashPassword, comparePassword } from './utils/password.util';
 import { prisma } from 'src/prisma.service';
 
@@ -134,7 +135,7 @@ export class UsersService {
     return response;
   }
 
-  async getProfile(userId: number): Promise<ProfileResponseDto> {
+  async getProfile(userId: string): Promise<ProfileResponseDto> {
     const user = await prisma.user.findUnique({
       where: { id: userId },
     });
@@ -158,5 +159,74 @@ export class UsersService {
     };
 
     return response;
+  }
+
+  async updateProfile(
+    userId: string,
+    updateProfileDto: UpdateProfileDto,
+  ): Promise<ProfileResponseDto> {
+    // Check if user exists
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!existingUser) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    try {
+      // Prepare update data (only include fields that are provided)
+      const updateData: any = {};
+
+      if (updateProfileDto.firstName !== undefined) {
+        updateData.firstName = updateProfileDto.firstName;
+      }
+
+      if (updateProfileDto.lastName !== undefined) {
+        updateData.lastName = updateProfileDto.lastName;
+      }
+
+      if (updateProfileDto.phoneNumber !== undefined) {
+        updateData.phoneNumber = updateProfileDto.phoneNumber;
+      }
+
+      if (updateProfileDto.businessName !== undefined) {
+        updateData.businessName = updateProfileDto.businessName;
+      }
+
+      if (updateProfileDto.supportEmail !== undefined) {
+        updateData.supportEmail = updateProfileDto.supportEmail || null;
+      }
+
+      // Update the user
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: updateData,
+      });
+
+      // Transform response (exclude password)
+      const response: ProfileResponseDto = {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        phoneNumber: updatedUser.phoneNumber,
+        businessName: updatedUser.businessName,
+        supportEmail: updatedUser.supportEmail,
+        role: updatedUser.role,
+        createdAt: updatedUser.createdAt,
+        updatedAt: updatedUser.updatedAt,
+      };
+
+      return response;
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        `Failed to update profile: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
   }
 }

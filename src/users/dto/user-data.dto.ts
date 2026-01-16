@@ -3,8 +3,8 @@ import { IsString, IsNumber, IsDate, IsOptional } from 'class-validator';
 
 export class UserDataDto {
   @Expose()
-  @IsNumber()
-  id: number;
+  @IsString()
+  id: string;
 
   @Expose()
   @IsString()

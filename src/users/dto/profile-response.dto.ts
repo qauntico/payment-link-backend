@@ -2,7 +2,7 @@ import { Expose } from 'class-transformer';
 
 export class ProfileResponseDto {
   @Expose()
-  id: number;
+  id: string;
 
   @Expose()
   email: string;
