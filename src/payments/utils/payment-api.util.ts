@@ -19,7 +19,10 @@ export async function paymentApiPost<T = any>(
   body?: any,
 ): Promise<PaymentApiResponse<T>> {
   const { baseUrl, clientKey, clientSecret, token } = config;
-
+  // console.log('baseUrl', baseUrl);
+  // console.log('clientKey', clientKey);
+  // console.log('clientSecret', clientSecret);
+  // console.log('token', token);
   const headers: Record<string, string> = {
     'client-key': clientKey,
     'client-secret': clientSecret,
@@ -36,6 +39,8 @@ export async function paymentApiPost<T = any>(
     headers,
     body: body ? JSON.stringify(body) : undefined,
   });
+
+  console.log('response', response);
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));

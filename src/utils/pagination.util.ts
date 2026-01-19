@@ -1,6 +1,4 @@
-/**
- * Pagination metadata interface
- */
+
 export interface PaginationMeta {
   total: number;
   page: number;
@@ -8,21 +6,12 @@ export interface PaginationMeta {
   total_pages: number;
 }
 
-/**
- * Pagination result interface
- */
 export interface PaginationResult<T> {
   data: T[];
   pagination: PaginationMeta;
 }
 
-/**
- * Calculate pagination metadata
- * @param total - Total number of items
- * @param page - Current page number (1-based)
- * @param limit - Number of items per page
- * @returns PaginationMeta object
- */
+// Calculate pagination metadata
 export function calculatePagination(
   total: number,
   page: number,
@@ -38,12 +27,7 @@ export function calculatePagination(
   };
 }
 
-/**
- * Get skip value for Prisma queries
- * @param page - Current page number (1-based)
- * @param limit - Number of items per page
- * @returns Skip value for Prisma
- */
+// Get skip value for Prisma queries
 export function getSkipValue(page: number, limit: number): number {
   return (page - 1) * limit;
 }

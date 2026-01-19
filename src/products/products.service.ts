@@ -71,7 +71,6 @@ export class ProductsService {
         data: { paymentLink },
       });
 
-      // Transform response
       const response: ProductResponseDto = {
         id: updatedProduct.id,
         merchantId: updatedProduct.merchantId,
@@ -162,7 +161,6 @@ export class ProductsService {
         data: updateData,
       });
 
-      // Transform response
       const response: ProductResponseDto = {
         id: updatedProduct.id,
         merchantId: updatedProduct.merchantId,
@@ -221,7 +219,6 @@ export class ProductsService {
         data: { isActive },
       });
 
-      // Transform response
       const response: ProductResponseDto = {
         id: updatedProduct.id,
         merchantId: updatedProduct.merchantId,

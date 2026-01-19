@@ -55,16 +55,16 @@ model User {
 // Product Model
 model Product {
   id          String   @id @default(uuid())
-  merchantId  String // Changed to String to match User.id (UUID)
-  image       String // URL or file path to product image
+  merchantId  String 
+  image       String 
   title       String
-  description String? // Optional description
-  price       Decimal  @db.Decimal(10, 2) // Price with 2 decimal places
-  currency    Currency @default(XAF) // Currency for the product (XAF or USD)
-  quantity    Int? // null = unlimited quantity, otherwise fixed quantity
-  email       String? // Optional email for product-specific contact
-  paymentLink String? // Full payment link URL (e.g., "https://yourapp.com/pay?productId=1")
-  isActive    Boolean  @default(true) // Becomes false when quantity reaches 0
+  description String? 
+  price       Decimal  @db.Decimal(10, 2) 
+  currency    Currency @default(XAF) 
+  quantity    Int? 
+  email       String? 
+  paymentLink String? 
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -81,18 +81,18 @@ model Product {
 // Payment/Transaction Model
 model Payment {
   id                  String   @id @default(uuid())
-  token               String? // JWT token from payment API authentication
-  productId           String? // Optional initially, required when payment is initialized
-  customerName        String? // Optional initially, required when payment is initialized
-  customerEmail       String? // Optional initially, required when payment is initialized
-  customerPhoneNumber String? // Optional initially, required when payment is initialized
-  quantity            Int? // Optional initially, required when payment is initialized
-  amount              Decimal? @db.Decimal(10, 2) // Optional initially, required when payment is initialized
+  token               String? 
+  productId           String? 
+  customerName        String? 
+  customerEmail       String? 
+  customerPhoneNumber String? 
+  quantity            Int? 
+  amount              Decimal? @db.Decimal(10, 2) 
   status              String?
   externalReference   String? // Internal payment ID/reference
   momoReference       String? // Transaction reference from MoMo API
-  currencyCode        String?  @default("XAF") // Default currency code
-  countryCode         String?  @default("CM") // Default country code
+  currencyCode        String?  @default("XAF") 
+  countryCode         String?  @default("CM") 
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 

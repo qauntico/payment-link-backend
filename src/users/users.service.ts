@@ -60,7 +60,6 @@ export class UsersService {
 
       const accessToken = this.jwtService.sign(payload);
 
-      // Transform response (exclude password)
       const response: SignupResponseDto = {
         user: {
         id: user.id,
@@ -99,6 +98,10 @@ export class UsersService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
+    if (user.restricted) {
+      throw new UnauthorizedException('User is restricted');
+    }
+
     // Compare password
     const isPasswordValid = await comparePassword(password, user.password);
 
@@ -115,7 +118,6 @@ export class UsersService {
 
     const accessToken = this.jwtService.sign(payload);
 
-    // Transform response (exclude password)
     const response: LoginResponseDto = {
       user: {
         id: user.id,
@@ -144,7 +146,6 @@ export class UsersService {
       throw new UnauthorizedException('User not found');
     }
 
-    // Transform response (exclude password)
     const response: ProfileResponseDto = {
       id: user.id,
       email: user.email,
@@ -204,7 +205,6 @@ export class UsersService {
         data: updateData,
       });
 
-      // Transform response (exclude password)
       const response: ProfileResponseDto = {
         id: updatedUser.id,
         email: updatedUser.email,
