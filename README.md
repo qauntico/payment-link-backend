@@ -401,7 +401,3 @@ postgresql://postgres:postgres@localhost:5434/payment_link
 ```
 
 ---
-
-## License
-
-This project is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
