@@ -217,11 +217,15 @@ export class PaymentsService {
         );
       }
 
-      let amount = 0;
-      if (quantity > (product.quantity || 0)) {
-        throw new BadGatewayException('Quantity is greater than product quantity');
+      let amount: number;
+      if (product.quantity !== null) {
+        if (quantity > (product.quantity || 0)) {
+          throw new BadGatewayException('Quantity is greater than product quantity');
+        }
+        amount = Number(product.price) * Number(quantity);
+      } else {
+        amount = Number(product.price);
       }
-      amount = Number(product.price) * Number(quantity);
       console.log('amount', amount);
       // Generate unique UUID for externalReference
       const externalReference = randomUUID();

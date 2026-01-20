@@ -5,6 +5,7 @@ import {
   IsEnum,
   IsNotEmpty,
   Min,
+  IsOptional,
 } from 'class-validator';
 
 export enum PaymentMode {
@@ -27,6 +28,7 @@ export class InitiatePaymentDto {
 
   @IsNumber()
   @IsNotEmpty()
+  @IsOptional()
   quantity: number;
 
   @IsString()

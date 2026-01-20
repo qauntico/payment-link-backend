@@ -40,7 +40,7 @@ export async function paymentApiPost<T = any>(
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  console.log('response', response);
+  // console.log('response', response);
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
