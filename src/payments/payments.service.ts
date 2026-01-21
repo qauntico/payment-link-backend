@@ -646,7 +646,7 @@ export class PaymentsService {
         return sum;
       }, 0);
 
-      // Format amount to 2 decimal places
+  
       const formattedAmount = amount_earn.toFixed(2);
 
       return new MerchantStatsResponseDto(
