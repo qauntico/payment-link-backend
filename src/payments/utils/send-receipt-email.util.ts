@@ -30,7 +30,7 @@ export async function sendReceiptEmail(
     const transporter = createTransporter();
 
     const mailOptions = {
-      from: process.env.MAIL_FROM || `noreply@${process.env.MAIL_HOST?.split('.')[0] || 'marketplace'}.com`,
+      from: process.env.MAIL_FROM || `noreply@${process.env.MAIL_HOST?.split('.')[0] || 'paymentlink'}.com`,
       to: customerEmail,
       subject: subject,
       html: paymentReceiptTemplate(

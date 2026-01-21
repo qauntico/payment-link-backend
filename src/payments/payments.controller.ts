@@ -8,6 +8,8 @@ import {
   Body,
   UsePipes,
   ValidationPipe,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { AuthenticatePaymentResponseDto } from './dto/authenticate-payment-response.dto';
@@ -15,6 +17,11 @@ import { InitiatePaymentDto } from './dto/initiate-payment.dto';
 import { InitiatePaymentResponseDto } from './dto/initiate-payment-response.dto';
 import { CheckPaymentStatusResponseDto } from './dto/check-payment-status-response.dto';
 import { ProductWithMerchantDto } from './dto/product-with-merchant.dto';
+import { MerchantStatsResponseDto } from './dto/merchant-stats-response.dto';
+import { AuthGuard } from '../users/guards/auth.guard';
+import { RolesGuard } from '../roles/roles.guard';
+import { Roles } from '../roles/role.decorator';
+import { Role } from '../roles/roles.enum';
 
 @Controller('payments')
 export class PaymentsController {
@@ -52,8 +59,15 @@ export class PaymentsController {
   ): Promise<ProductWithMerchantDto> {
     return this.paymentsService.getProductWithMerchant(productId);
   }
-  
 
-  
-
+  @Get('stats')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Role.Merchant, Role.Admin)
+  @HttpCode(HttpStatus.OK)
+  async getMerchantStats(
+    @Request() req,
+  ): Promise<MerchantStatsResponseDto> {
+    const merchantId = req.user.sub;
+    return this.paymentsService.getMerchantStats(merchantId);
+  }
 }

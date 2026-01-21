@@ -17,6 +17,8 @@ import { CloudinaryService } from '../products/cloudinary/cloudinary.service';
 import { generateReceiptPdf } from './utils/receipt.util';
 import { paymentApiPost, paymentApiGet } from './utils/payment-api.util';
 import { sendReceiptEmail } from './utils/send-receipt-email.util';
+import { sendMerchantNotification } from './utils/send-merchant-notification.util';
+import { MerchantStatsResponseDto } from './dto/merchant-stats-response.dto';
 
 interface PaymentAuthResponse {
   message: string;
@@ -475,23 +477,44 @@ export class PaymentsService {
             },
           });
 
-          // Send receipt email to customer if email is available
+          // Send receipt email to customer 
           if (updatedPayment.customerEmail && updatedPayment.customerName) {
-            try {
-              await sendReceiptEmail({
-                customerEmail: updatedPayment.customerEmail,
-                customerName: updatedPayment.customerName,
+            sendReceiptEmail({
+              customerEmail: updatedPayment.customerEmail,
+              customerName: updatedPayment.customerName,
+              productTitle: updatedPayment.product?.title || 'Product',
+              amount: updatedPayment.amount
+                ? Number(updatedPayment.amount).toFixed(2)
+                : '0.00',
+              currency: updatedPayment.currencyCode || updatedPayment.product?.currency || 'XAF',
+              receiptUrl: receiptUrl,
+              merchantName: updatedPayment.product?.merchant?.businessName || 'Merchant',
+            }).catch((emailError) => {
+              // Log error but don't fail the payment process
+              console.error('Failed to send receipt email:', emailError);
+            });
+          }
+
+          // Send notification email to merchant 
+          if (updatedPayment.product?.merchant) {
+            const merchant = updatedPayment.product.merchant;
+            const merchantEmail = merchant.email || merchant.supportEmail;
+            
+            if (merchantEmail && updatedPayment.customerName) {
+              sendMerchantNotification({
+                merchantEmail: merchantEmail,
+                merchantName: merchant.businessName || 'Merchant',
                 productTitle: updatedPayment.product?.title || 'Product',
+                customerName: updatedPayment.customerName,
                 amount: updatedPayment.amount
                   ? Number(updatedPayment.amount).toFixed(2)
                   : '0.00',
                 currency: updatedPayment.currencyCode || updatedPayment.product?.currency || 'XAF',
                 receiptUrl: receiptUrl,
-                merchantName: updatedPayment.product?.merchant?.businessName || 'Merchant',
+              }).catch((emailError) => {
+                // Log error but don't fail the payment process
+                console.error('Failed to send merchant notification email:', emailError);
               });
-            } catch (emailError) {
-              // Log error but don't fail the payment process
-              console.error('Failed to send receipt email:', emailError);
             }
           }
 
@@ -593,6 +616,47 @@ export class PaymentsService {
       }
       throw new InternalServerErrorException(
         `Failed to fetch product: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
+  }
+
+  async getMerchantStats(merchantId: string): Promise<MerchantStatsResponseDto> {
+    try {
+      // Get all confirmed payments for products belonging to this merchant
+      const confirmedPayments = await prisma.payment.findMany({
+        where: {
+          status: 'confirmed',
+          product: {
+            merchantId: merchantId,
+          },
+        },
+        select: {
+          amount: true,
+        },
+      });
+
+      // Count total completed transactions
+      const total_completed_transactions = confirmedPayments.length;
+
+      // Calculate total amount earned (sum of all amounts)
+      const amount_earn = confirmedPayments.reduce((sum, payment) => {
+        if (payment.amount) {
+          return sum + Number(payment.amount);
+        }
+        return sum;
+      }, 0);
+
+      // Format amount to 2 decimal places
+      const formattedAmount = amount_earn.toFixed(2);
+
+      return new MerchantStatsResponseDto(
+        total_completed_transactions,
+        formattedAmount,
+      );
+    } catch (error) {
+      console.error('Error fetching merchant stats:', error);
+      throw new InternalServerErrorException(
+        `Failed to fetch merchant stats: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
   }
